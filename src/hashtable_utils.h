@@ -9,6 +9,9 @@ typedef struct SSDBufHashBucket
     long    				desp_serial_id;
     long                selfid;
     long                next_item_id;
+    long                remaining;
+    long                insertCnt;
+    long                deleteCnt;
     struct SSDBufHashBucket 	*next_item;
 } SSDBufHashBucket;
 
