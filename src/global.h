@@ -138,5 +138,8 @@ extern const char* SHM_FIFO_HASH_FREELIST;
 extern const char* SHM_SSD_HASH_TAB;
 extern const char* SHM_SSD_FREE_LIST;
 
+extern const char* SHM_Most_HASHTABLE;
+extern const char* SHM_Most_FREELIST;
+
 extern const char* PATH_LOG;
 #endif

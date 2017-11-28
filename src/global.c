@@ -66,5 +66,8 @@ const char* SHM_FIFO_HASH_FREELIST = "SHM_FIFO_HASH_FREELIST";
 const char* SHM_SSD_HASH_TAB = "SHM_SSD_HASH_TAB";
 const char* SHM_SSD_FREE_LIST = "SHM_SSD_FREE_LIST";
 
+const char* SHM_Most_HASHTABLE = "SHM_Most_HASHTABLE";
+const char* SHM_Most_FREELIST = "SHM_Most_FREELIST";
+
 const char* PATH_LOG = "/home/outputs/logs";
 

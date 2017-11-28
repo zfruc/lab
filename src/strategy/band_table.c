@@ -1,19 +1,47 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "shmlib.h"
+#include "global.h"
 #include "band_table.h"
+
+BandHashBucket *band_hashtable;
+BandHashBucket* freelist;
 
 static bool isSameband(long band_id1,long band_id2);
 
-void initBandTable(size_t size, BandHashBucket ** band_hashtable)
+void initBandTable(size_t size)
 {
-	*band_hashtable = (BandHashBucket *)malloc(sizeof(BandHashBucket)*size);
-	size_t i;
-	BandHashBucket *band_hash = *band_hashtable;
-	for(i = 0;i < size; band_hash++,i++){
-		band_hash->band_num = -1;
-		band_hash->band_id = -1;
-		band_hash->next_item = NULL;	
-	}	
+	int stat = SHM_lock_n_check("LOCK_STRATEGY_Most_HASHBAND");
+	if(stat==0)
+	{
+		band_hashtable = (BandHashBucket *)SHM_alloc(SHM_Most_HASHTABLE,sizeof(BandHashBucket)*size);
+        freelist = (BandHashBucket *)SHM_alloc(SHM_Most_FREELIST,sizeof(BandHashBucket)*NTABLE_SSD_CACHE);
+		size_t i;
+		BandHashBucket *band_hash = band_hashtable;
+		for(i = 0;i < size; band_hash++,i++){
+			band_hash->band_num = -1;
+			band_hash->band_id = -1;
+			band_hash->next_item = -1;
+            band_hash->self_id = i;
+		}
+        BandHashBucket *freeptr = freelist;
+        for(i = 0;i < NTABLE_SSD_CACHE + 1; freeptr++,i++)
+        {
+            freeptr->band_num = -1;
+            freeptr->band_id = -1;
+            freeptr->next_item = i+1;
+            freeptr->self_id = i;
+        }
+        freelist[NTABLE_SSD_CACHE+1 -1].next_item = -1;
+	}
+	else
+    {
+        band_hashtable = (BandHashBucket *)SHM_get(SHM_Most_HASHTABLE,sizeof(BandHashBucket)*size);
+        freelist = (BandHashBucket *)SHM_get(SHM_Most_FREELIST,sizeof(BandHashBucket)*NTABLE_SSD_CACHE);
+    }
+
+
+    SHM_unlock("LOCK_STRATEGY_Most_HASHBAND");
 }
 
 unsigned long bandtableHashcode(long band_num)
@@ -22,62 +50,69 @@ unsigned long bandtableHashcode(long band_num)
 	return band_hash;
 }
 
-size_t bandtableLookup(long band_num,unsigned long hash_code, BandHashBucket * band_hashtable)
+BandHashBucket *bandtableAlloc()
+{
+    if(freelist->next_item < 0)
+        return NULL;
+    else
+    {
+        BandHashBucket *tmp = &freelist[freelist->next_item];
+        freelist->next_item = tmp->next_item;
+        tmp->next_item = -1;
+        return tmp;
+    }
+}
+
+size_t bandtableLookup(long band_num,unsigned long hash_code)
 {
 	BandHashBucket *nowbucket = GetBandHashBucket(hash_code, band_hashtable);
-	while(nowbucket != NULL){
-		if(isSameband(nowbucket->band_num,band_num))
+	while(nowbucket->next_item != -1){
+		if(isSameband(freelist[nowbucket->next_item].band_num,band_num))
 			return nowbucket->band_id;	
-		nowbucket = nowbucket->next_item;
+		nowbucket = &freelist[nowbucket->next_item];
 	}
 	return -1;
 }
 
-long bandtableInsert(long band_num,unsigned long hash_code,long band_id, BandHashBucket ** band_hashtable)
+long bandtableInsert(long band_num,unsigned long hash_code,long band_id)
 {
 //	printf("insert table:band_num%ld hash_code:%ld band_id:%ld\n ",band_num,hash_code,band_id);
-	BandHashBucket *nowbucket = GetBandHashBucket(hash_code, *band_hashtable);	
-	while(nowbucket->next_item != NULL && nowbucket != NULL){
-		nowbucket = nowbucket->next_item;
+	BandHashBucket *nowbucket = GetBandHashBucket(hash_code, band_hashtable);
+	while(nowbucket->next_item != -1){
+		nowbucket = &freelist[nowbucket->next_item];
 	}
-	if(nowbucket != NULL){
-		BandHashBucket *newitem = (BandHashBucket *)malloc(sizeof(BandHashBucket));
-		newitem->band_num = band_num;
-		newitem->band_id = band_id;
-		newitem->next_item = NULL;
-		nowbucket->next_item = newitem;
-	} else {
-		nowbucket->band_num = band_num;
-		nowbucket->band_id = band_id;
-		nowbucket->next_item = NULL;	
-	}
+
+    BandHashBucket *newitem = bandtableAlloc();
+    if(newitem == NULL)
+    {
+        printf("alloc error in band_table.c.\n");
+        exit(-1);
+    }
+    newitem->band_num = band_num;
+    newitem->band_id = band_id;
+    newitem->next_item = nowbucket->next_item;
+    nowbucket->next_item = newitem->self_id;
+
 	return -1;
 }
 
-long bandtableDelete(long band_num,unsigned long hash_code, BandHashBucket ** band_hashtable)
+long bandtableDelete(long band_num,unsigned long hash_code)
 {
-	BandHashBucket *nowbucket = GetBandHashBucket(hash_code, *band_hashtable);
+	BandHashBucket *nowbucket = GetBandHashBucket(hash_code, band_hashtable);
 	long del_val;
 	BandHashBucket *delitem;
-	while(nowbucket->next_item != NULL && nowbucket != NULL){
-		if(isSameband(nowbucket->next_item->band_num,band_num)){
-			del_val = nowbucket->next_item->band_id;
-			break;
+	while(nowbucket->next_item != -1){
+		if(isSameband(freelist[nowbucket->next_item].band_num,band_num)){
+			del_val = freelist[nowbucket->next_item].band_id;
+			delitem = &freelist[nowbucket->next_item];
+            nowbucket->next_item = delitem->next_item;
+            bandtableRelease(delitem);
+            return del_val;
 		}
-		nowbucket = nowbucket->next_item;
+		nowbucket = &freelist[nowbucket->next_item];
 	}
-	if(nowbucket->next_item != NULL) {
-		delitem = nowbucket->next_item;
-		nowbucket->next_item = nowbucket->next_item->next_item;
-		free(delitem);
-		return del_val;
-	}
-	else {
-		delitem = nowbucket->next_item;
-		nowbucket->next_item = NULL;
-		free(delitem);
-		return del_val;
-	}
+    printf("error in bandtableDelete.\n");
+    exit(-1);
 	return -1;
 }
 
@@ -87,3 +122,12 @@ static bool isSameband(long band_num1,long band_num2)
 		return 0;
 	else return 1;
 }
+
+
+
+void bandtableRelease(BandHashBucket *bucket)
+{
+    bucket->next_item = freelist->next_item;
+    freelist->next_item = bucket->self_id;
+}
+

@@ -26,7 +26,6 @@ typedef struct
 SSDBufDespForMost *ssd_buf_desps_for_most;
 BandDescForMost *band_descriptors_for_most;
 SSDBufferStrategyControlForMost *ssd_buf_strategy_ctrl_for_most;
-BandHashBucket *band_hashtable_for_most;
 
 extern int initSSDBufferForMost();
 extern int HitMostBuffer();

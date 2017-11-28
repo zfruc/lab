@@ -193,7 +193,7 @@ static void flagOp(SSDBufDesp * ssd_buf_hdr, int opType)
 static SSDBufDesp*
 allocSSDBuf(SSDBufTag ssd_buf_tag, bool * found, int alloc4What)
 {
-  //  printf("come into allocSSDBuf().\n");
+ //   printf("come into allocSSDBuf().\n");
     /* Lookup if already cached. */
 
     SSDBufDesp      *ssd_buf_hdr; //returned value.
@@ -203,7 +203,7 @@ allocSSDBuf(SSDBufTag ssd_buf_tag, bool * found, int alloc4What)
     /* Cache HIT IN */
     if (ssd_buf_id >= 0)
     {
-   //     printf("cache hit in.\n");
+  //      printf("cache hit in.\n");
         ssd_buf_hdr = &ssd_buf_desps[ssd_buf_id];
         if(isSamebuf(ssd_buf_hdr->ssd_buf_tag.offset,ssd_buf_tag.offset))
         {
@@ -213,11 +213,12 @@ allocSSDBuf(SSDBufTag ssd_buf_tag, bool * found, int alloc4What)
 
             STT->hitnum_s++;
             *found = 1;
+    //        printf("finish allocSSDBuf().\n");
             return ssd_buf_hdr;
         }
         else
         {
-            printf("ssd_buf_id = %ld,error hit in.\n",ssd_buf_id);
+    //        printf("ssd_buf_id = %ld,error hit in.\n",ssd_buf_id);
             exit(-1);
             /** passive delete hash item, which corresponding cache buf has been evicted early **/
             HashTab_Delete(ssd_buf_tag,ssd_buf_hash);
@@ -237,7 +238,7 @@ allocSSDBuf(SSDBufTag ssd_buf_tag, bool * found, int alloc4What)
     *found = 0;
   //  printf("try to get a free SSDBuf.\n");
     ssd_buf_hdr = getAFreeSSDBuf();
-  //  printf("already got a free SSDBuf.\n");
+ //   printf("already got a free SSDBuf.\n");
     if (ssd_buf_hdr != NULL)
     {
          cleanbkCnt++;
@@ -287,15 +288,15 @@ allocSSDBuf(SSDBufTag ssd_buf_tag, bool * found, int alloc4What)
   //      _LOCK(&ssd_buf_hdr->lock);
 #else
         long out_despId = Strategy_Desp_LogOut(); //need look
-  //      printf("LogOut a valid desp.\n");
+    //    printf("LogOut a valid desp.\n");
         ssd_buf_hdr = &ssd_buf_desps[out_despId];
 //        _LOCK(&ssd_buf_hdr->lock);
         // Clear Hashtable item.
         SSDBufTag oldtag = ssd_buf_hdr->ssd_buf_tag;
         unsigned long hash = HashTab_GetHashCode(oldtag);
         HashTab_Delete(oldtag,hash);
-	//printf("now cache miss, HashTab_Delete() done.\n");
-	deleteCall++;
+	//    printf("now cache miss, HashTab_Delete() done.\n");
+	    deleteCall++;
     //    printf("insertCall - deleteCall = %d.ssd_buf_desp_ctrl->n_usedssd = %d\n",insertCall - deleteCall,ssd_buf_desp_ctrl->n_usedssd);
 	// TODO Flush
         flushSSDBuffer(ssd_buf_hdr);
@@ -310,11 +311,11 @@ allocSSDBuf(SSDBufTag ssd_buf_tag, bool * found, int alloc4What)
 
    // printf("before HashTab_Insert, now cleanbkCnt = %lu.\n",cleanbkCnt);
     HashTab_Insert(ssd_buf_tag, ssd_buf_hash, ssd_buf_hdr->serial_id);
-   // printf("now HashTab_Insert().\n");
+ //   printf("now HashTab_Insert().\n");
     insertCall ++;
     //printf("next, try desp log in.\n");
     Strategy_Desp_LogIn(ssd_buf_hdr);
- //printf("finish allocSSDBuf().\n");
+ //   printf("finish allocSSDBuf().\n");
     //printf("now allocSSDBuf release lock ssd_buf_desp_ctrl->lock.\n");
     if(insertCall < deleteCall)
     {

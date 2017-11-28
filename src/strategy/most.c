@@ -11,11 +11,12 @@ BandDescForMost	*EvictedBand;
 int
 initSSDBufferForMost()
 {
-    initBandTable(NBANDTables, &band_hashtable_for_most);
+
 
     int stat = SHM_lock_n_check("LOCK_SSDBUF_STRATEGY_Most");
     if(stat == 0)
     {
+        initBandTable(NBANDTables);
         SSDBufDespForMost *ssd_buf_hdr_for_most;
         BandDescForMost *band_hdr_for_most;
         ssd_buf_desps_for_most = (SSDBufDespForMost *) SHM_alloc(SHM_SSDBUF_STRATEGY_DESP,sizeof(SSDBufDespForMost) * NBLOCK_SSD_CACHE);
@@ -29,13 +30,14 @@ initSSDBufferForMost()
         band_descriptors_for_most = (BandDescForMost *) SHM_alloc(SHM_BAND_STRATEGY_DESP,sizeof(BandDescForMost) * NZONES);
         band_hdr_for_most = band_descriptors_for_most;
         for (i = 0; i < NZONES; band_hdr_for_most++, i++) {
-            band_hdr_for_most->band_num = 0;
+            band_hdr_for_most->band_num = -1;
             band_hdr_for_most->current_pages = 0;
             band_hdr_for_most->first_page = -1;
         }
 
         ssd_buf_strategy_ctrl_for_most = (SSDBufferStrategyControlForMost *) SHM_alloc(SHM_SSDBUF_STRATEGY_CTRL,sizeof(SSDBufferStrategyControlForMost));
         ssd_buf_strategy_ctrl_for_most->nbands = 0;
+		SHM_mutex_init(&ssd_buf_strategy_ctrl_for_most->lock);
 
         EvictedBand = (BandDescForMost *)SHM_alloc(SHM_STRATEGY_EVICTED_BAND,sizeof(BandDescForMost));
         EvictedBand->band_num = 0;
@@ -44,6 +46,7 @@ initSSDBufferForMost()
     }
     else
     {
+        initBandTable(NBANDTables);
         ssd_buf_desps_for_most = (SSDBufDespForMost *) SHM_get(SHM_SSDBUF_STRATEGY_DESP,sizeof(SSDBufDespForMost) * NBLOCK_SSD_CACHE);
         band_descriptors_for_most = (BandDescForMost *) SHM_get(SHM_BAND_STRATEGY_DESP,sizeof(BandDescForMost) * NZONES);
         ssd_buf_strategy_ctrl_for_most = (SSDBufferStrategyControlForMost *) SHM_get(SHM_SSDBUF_STRATEGY_CTRL,sizeof(SSDBufferStrategyControlForMost));
@@ -62,8 +65,9 @@ HitMostBuffer()
 long LogOutDesp_most()
 {
 	long band_hash = 0;
+  //  printf("try to get lock in LogOutDesp_most.n.\n");
 	_LOCK(&ssd_buf_strategy_ctrl_for_most->lock);
-	//printf("now LogOutDesp_most hold lock ssd_buf_strategy_ctrl_for_most->lock.\n");
+//	printf("now LogOutDesp_most hold lock ssd_buf_strategy_ctrl_for_most->lock.\n");
 //	printf("before while loop checking EvictedBand->first_page, EvictedBand->first_page = %d.\n",EvictedBand->first_page);
 	long loop_standard = EvictedBand->first_page;
 //	printf("out of while, loop_standard = %d\n",loop_standard);
@@ -76,7 +80,7 @@ long LogOutDesp_most()
             break;
         }
 */
-		bandtableDelete(EvictedBand->band_num, bandtableHashcode(EvictedBand->band_num), &band_hashtable_for_most);
+		bandtableDelete(EvictedBand->band_num, bandtableHashcode(EvictedBand->band_num));
 		BandDescForMost	temp;
 //		printf("band_descriptors_for_most[0].first_page = %d.\n",band_descriptors_for_most[0].first_page);
 		*EvictedBand = band_descriptors_for_most[0];
@@ -92,8 +96,8 @@ long LogOutDesp_most()
 			else {
 				band_descriptors_for_most[parent] = band_descriptors_for_most[child];
 				long		band_hash = bandtableHashcode(band_descriptors_for_most[child].band_num);
-				bandtableDelete(band_descriptors_for_most[child].band_num, band_hash, &band_hashtable_for_most);
-				bandtableInsert(band_descriptors_for_most[child].band_num, band_hash, parent, &band_hashtable_for_most);
+				bandtableDelete(band_descriptors_for_most[child].band_num, band_hash);
+				bandtableInsert(band_descriptors_for_most[child].band_num, band_hash, parent);
 				parent = child;
 				child = child * 2 + 1;
 			}
@@ -104,15 +108,15 @@ long LogOutDesp_most()
 		band_descriptors_for_most[ssd_buf_strategy_ctrl_for_most->nbands - 1].first_page = -1;
 		ssd_buf_strategy_ctrl_for_most->nbands--;
 		band_hash = bandtableHashcode(temp.band_num);
-		bandtableDelete(temp.band_num, band_hash, &band_hashtable_for_most);
-		bandtableInsert(temp.band_num, band_hash, parent, &band_hashtable_for_most);
+		bandtableDelete(temp.band_num, band_hash);
+		bandtableInsert(temp.band_num, band_hash, parent);
   //      _UNLOCK(&ssd_buf_strategy_ctrl_for_most->lock);
 		loop_standard = EvictedBand->first_page;
 	}
 
 	long		band_num = EvictedBand->band_num;
 	band_hash = bandtableHashcode(band_num);
-	long		band_id = bandtableLookup(band_num, band_hash, band_hashtable_for_most);
+	long		band_id = bandtableLookup(band_num, band_hash);
 	long		first_page = EvictedBand->first_page;
 
 //	printf("first_page = %lf,NBLOCK_SSD_CACHE = %lf\n",first_page,NBLOCK_SSD_CACHE);
@@ -121,7 +125,7 @@ long LogOutDesp_most()
 	EvictedBand->first_page = ssd_buf_desps_for_most[first_page].next_ssd_buf;
 	ssd_buf_desps_for_most[first_page].next_ssd_buf = -1;
 	_UNLOCK(&ssd_buf_strategy_ctrl_for_most->lock);
-	//printf("now LogOutDesp_most release lock ssd_buf_strategy_ctrl_for_most->lock.\n");
+//printf("now LogOutDesp_most release lock ssd_buf_strategy_ctrl_for_most->lock.\n");
 	return ssd_buf_desps_for_most[first_page].ssd_buf_id;
 }
 
@@ -129,14 +133,15 @@ long LogInMostBuffer(long despId, SSDBufTag tag)
 {
 	long		band_num = GetSMRBandNumFromSSD(tag.offset);
 	unsigned long	band_hash = bandtableHashcode(band_num);
-	long		band_id = bandtableLookup(band_num, band_hash, band_hashtable_for_most);
+	long		band_id = bandtableLookup(band_num, band_hash);
 
 	SSDBufDespForMost *ssd_buf_for_most;
 	BandDescForMost *band_hdr_for_most;
+  //  printf("try to get lock in LogInMostBuffer.n.\n");
+    _LOCK(&ssd_buf_strategy_ctrl_for_most->lock);
+ //   printf("now LogInMostBuffer hold lock ssd_buf_strategy_ctrl_for_most->lock.\n");
+
 	if (band_id >= 0) {
-        _LOCK(&ssd_buf_strategy_ctrl_for_most->lock);
-	//printf("now LogInMostBuffer hold lock ssd_buf_strategy_ctrl_for_most->lock.\n");	
-	//printf("hit band %ld\n", band_num);
 		SSDBufDespForMost *new_ssd_buf_for_most;
 		new_ssd_buf_for_most = &ssd_buf_desps_for_most[despId];
 		new_ssd_buf_for_most->next_ssd_buf = band_descriptors_for_most[band_id].first_page;
@@ -150,32 +155,28 @@ long LogInMostBuffer(long despId, SSDBufTag tag)
 			temp = band_descriptors_for_most[child];
 			band_descriptors_for_most[child] = band_descriptors_for_most[parent];
 			band_hash = bandtableHashcode(band_descriptors_for_most[parent].band_num);
-			bandtableDelete(band_descriptors_for_most[parent].band_num, band_hash, &band_hashtable_for_most);
-			bandtableInsert(band_descriptors_for_most[parent].band_num, band_hash, child, &band_hashtable_for_most);
+			bandtableDelete(band_descriptors_for_most[parent].band_num, band_hash);
+			bandtableInsert(band_descriptors_for_most[parent].band_num, band_hash, child);
 			band_descriptors_for_most[parent] = temp;
 			band_hash = bandtableHashcode(temp.band_num);
-			bandtableDelete(temp.band_num, band_hash, &band_hashtable_for_most);
-			bandtableInsert(temp.band_num, band_hash, parent, &band_hashtable_for_most);
+			bandtableDelete(temp.band_num, band_hash);
+			bandtableInsert(temp.band_num, band_hash, parent);
 
 			child = parent;
 			parent = (child - 1) / 2;
 		}
-		_UNLOCK(&ssd_buf_strategy_ctrl_for_most->lock);
-		//printf("now LogInMostBuffer release lock ssd_buf_strategy_ctrl_for_most->lock.\n"); 
 	} else {
-	    _LOCK(&ssd_buf_strategy_ctrl_for_most->lock);
-		//printf("now LogInMostBuffer hold lock ssd_buf_strategy_ctrl_for_most->lock.\n"); 
 		ssd_buf_strategy_ctrl_for_most->nbands++;
 		band_descriptors_for_most[ssd_buf_strategy_ctrl_for_most->nbands - 1].band_num = band_num;
 		band_descriptors_for_most[ssd_buf_strategy_ctrl_for_most->nbands - 1].current_pages = 1;
 		band_descriptors_for_most[ssd_buf_strategy_ctrl_for_most->nbands - 1].first_page = despId;
-		bandtableInsert(band_num, band_hash, ssd_buf_strategy_ctrl_for_most->nbands - 1, &band_hashtable_for_most);
-		SSDBufDespForMost *new_ssd_buf_for_most;
+        bandtableInsert(band_num, band_hash, ssd_buf_strategy_ctrl_for_most->nbands - 1);
+        SSDBufDespForMost *new_ssd_buf_for_most;
 		new_ssd_buf_for_most = &ssd_buf_desps_for_most[despId];
 		new_ssd_buf_for_most->next_ssd_buf = -1;
-		_UNLOCK(&ssd_buf_strategy_ctrl_for_most->lock);
-		//printf("now LogInMostBuffer release lock ssd_buf_strategy_ctrl_for_most->lock.\n"); 
 	}
+    _UNLOCK(&ssd_buf_strategy_ctrl_for_most->lock);
+   // printf("now LogOutDesp_most release lock ssd_buf_strategy_ctrl_for_most->lock.\n");
 	return band_id;
 }
 

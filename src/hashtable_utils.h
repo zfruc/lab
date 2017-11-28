@@ -12,7 +12,7 @@ typedef struct SSDBufHashBucket
     long                remaining;
     long                insertCnt;
     long                deleteCnt;
-    struct SSDBufHashBucket 	*next_item;
+ //   struct SSDBufHashBucket 	*next_item;
 } SSDBufHashBucket;
 
 extern SSDBufHashBucket* ssd_buf_hashtable;
@@ -21,4 +21,5 @@ extern unsigned long HashTab_GetHashCode(SSDBufTag ssd_buf_tag);
 extern long HashTab_Lookup(SSDBufTag ssd_buf_tag, unsigned long hash_code);
 extern long HashTab_Insert(SSDBufTag ssd_buf_tag, unsigned long hash_code, long desp_serial_id);
 extern long HashTab_Delete(SSDBufTag ssd_buf_tag, unsigned long hash_code);
+extern unsigned long Check_Bucket(unsigned long hash_code);
 #endif   /* SSDBUFTABLE_H */
