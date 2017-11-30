@@ -169,7 +169,7 @@ long ssdtableUpdate(DespTag tag, unsigned long hash_code, long despId)
             long oldId = nowbucket->despId;
             nowbucket->despId = despId;
             //printf("oldId returned by ssdtableUpdate is %ld.\n",oldId);
-	    return oldId;
+	        return oldId;
 		}
         if(nowbucket->next_item_id == -1)
             break;

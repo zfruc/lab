@@ -42,11 +42,11 @@ typedef struct
 
     long simu_read_smr_bands;
     long simu_flush_bands;
-    long simu_flush_band_size;
+    long simu_flush_band_size[5];
 
     blkcnt_t simu_n_collect_fifo;
     blkcnt_t simu_n_read_fifo;
-    blkcnt_t simu_n_write_fifo;
+    blkcnt_t simu_n_write_fifo[5];
     blkcnt_t simu_n_read_smr;
 
     blkcnt_t simu_n_fifo_write_HIT;

@@ -11,9 +11,9 @@ typedef struct
 
 typedef struct
 {
-	unsigned long band_num;
-	unsigned long current_pages;
-	unsigned long first_page;
+    long band_num;
+	long current_pages;
+	long first_page;
 } BandDescForMost;
 
 typedef struct

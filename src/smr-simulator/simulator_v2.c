@@ -120,8 +120,8 @@ void InitSimulator()
         posix_memalign(&BandBuffer, 512, sizeof(char) * BNDSZ);
 
         SHM_mutex_init(&simu_stat->simu_smr_fifo_mutex);
-	SHM_mutex_lock(&simu_stat->simu_smr_fifo_mutex);
-	SHM_mutex_unlock(&simu_stat->simu_smr_fifo_mutex);
+	    SHM_mutex_lock(&simu_stat->simu_smr_fifo_mutex);
+	    SHM_mutex_unlock(&simu_stat->simu_smr_fifo_mutex);
 
         printf("SHM_mutex_init done.\n");
         /** AIO related **/
@@ -133,16 +133,23 @@ void InitSimulator()
 
         simu_stat->simu_read_smr_bands = 0;
         simu_stat->simu_flush_bands = 0;
-        simu_stat->simu_flush_band_size = 0;
+  //      simu_stat->simu_flush_band_size = 0;
 
         simu_stat->simu_n_collect_fifo = 0;
         simu_stat->simu_n_read_fifo = 0;
-        simu_stat->simu_n_write_fifo = 0;
+  //      simu_stat->simu_n_write_fifo = 0;
         simu_stat->simu_n_read_smr = 0;
         simu_stat->simu_time_read_fifo = 0;
         simu_stat->simu_time_read_smr = 0;
         simu_stat->simu_time_write_smr = 0;
         simu_stat->simu_time_write_fifo = 0;
+        
+        int uId = 0;
+        for(uId = 0;uId < 5;uId++)
+        {
+            simu_stat->simu_flush_band_size[uId] = 0;
+            simu_stat->simu_n_write_fifo[uId] = 0;
+        }
 
         printf("begin to initSSDTable.\n");
         initSSDTable(NBLOCK_SMR_FIFO);
@@ -301,11 +308,11 @@ simu_smr_write(char *buffer, size_t size, off_t offset)
         ssd_hash = ssdtableHashcode(tag);
         long old_despId = ssdtableUpdate(tag, ssd_hash, ssd_hdr->despId);
        // printf("old_despId for removeFromArray = %ld.\n",old_despId);
-	if(old_despId >= 0)
-	{
-	    FIFODesc* oldDesp = fifo_desp_array + old_despId;
-	    removeFromArray(oldDesp); ///invalid the old desp;
-	}
+	    if(old_despId >= 0)
+	    {
+	        FIFODesc* oldDesp = fifo_desp_array + old_despId;
+	        removeFromArray(oldDesp); ///invalid the old desp;
+	    }
         _TimerLap(&tv_start);
     //    returnCode = pwrite(fd_fifo_part, buffer, BLCKSZ, ssd_hdr->despId * BLCKSZ);
         if (returnCode < 0)
@@ -315,7 +322,14 @@ simu_smr_write(char *buffer, size_t size, off_t offset)
         }
         _TimerLap(&tv_stop);
         simu_stat->simu_time_write_fifo += TimerInterval_SECOND(&tv_start,&tv_stop);
-        simu_stat->simu_n_write_fifo++;
+        
+        int uId = tag.offset/4096/20000000;
+    /*    if(uId != 0)
+        {
+            printf("uId = %d,offset = %ld in write.\n",uId,tag.offset);
+            exit(-1);
+        }*/
+        simu_stat->simu_n_write_fifo[uId]++;
     }
     simu_stat->ACCESS_FLAG = 1;
     SHM_mutex_unlock(&simu_stat->simu_smr_fifo_mutex);
@@ -468,9 +482,15 @@ flushFIFO()
     }
     _TimerLap(&tv_stop);
 
+    int uId = target->tag.offset/4096/20000000;
+/*    if(uId != 0)
+    {
+        printf("uId = %d,offset = %ld in flush.\n",uId,target->tag.offset);
+        exit(-1); 
+    }*/
     simu_stat->simu_time_write_smr += TimerInterval_SECOND(&tv_start,&tv_stop);
     simu_stat->simu_flush_bands++;
-    simu_stat->simu_flush_band_size += band_size;
+    simu_stat->simu_flush_band_size[uId] += band_size;
 
     wtrAmp = (double)band_size / (dirty_n_inBand * BLCKSZ);
     char log[256];
@@ -535,9 +555,15 @@ void PrintSimulatorStatistic()
     printf("Total I/O:\t%lf\n", simu_stat->simu_time_read_fifo+simu_stat->simu_time_write_fifo+simu_stat->simu_time_read_smr+simu_stat->simu_time_write_smr);
     printf("FIFO Collect:\t%lf\n",simu_stat->simu_time_collectFIFO);
     printf("Block/Band Count:\n");
-    printf("Read FIFO:\t%ld\nWrite FIFO:\t%ld\nFIFO Collect:\t%ld\nRead SMR:\t%ld\nFIFO Write HIT:\t%ld\n",simu_stat->simu_n_read_fifo, simu_stat->simu_n_write_fifo,simu_stat->simu_n_collect_fifo, simu_stat->simu_n_read_smr, simu_stat->simu_n_fifo_write_HIT);
+ //   printf("Read FIFO:\t%ld\nWrite FIFO:\t%ld\nFIFO Collect:\t%ld\nRead SMR:\t%ld\nFIFO Write HIT:\t%ld\n",simu_stat->simu_n_read_fifo, simu_stat->simu_n_write_fifo,simu_stat->simu_n_collect_fifo, simu_stat->simu_n_read_smr, simu_stat->simu_n_fifo_write_HIT);
     printf("Read Bands:\t%ld\nFlush Bands:\t%ld\nFlush BandSize:\t%ld\n",simu_stat->simu_read_smr_bands, simu_stat->simu_flush_bands, simu_stat->simu_flush_band_size);
 
-
-    printf("Total WrtAmp:\t%lf\n",(double)simu_stat->simu_flush_band_size / (simu_stat->simu_n_write_fifo * BLCKSZ));
+    int i = 0;
+    for(i = 0;i < 5;i++)
+    {
+        if(simu_stat->simu_flush_band_size[i] == 0)
+            break;
+        printf("User %d  WrtAmp:\t%lf\n",i,(double)simu_stat->simu_flush_band_size[i] / (simu_stat->simu_n_write_fifo[i] * BLCKSZ));
+    }
+//    printf("Total WrtAmp:\t%lf\n",(double)simu_stat->simu_flush_band_size / (simu_stat->simu_n_write_fifo * BLCKSZ));
 }

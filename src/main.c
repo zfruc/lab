@@ -71,7 +71,7 @@ main(int argc, char** argv)
 
 // 1 1 1 0 0 100000 100000
 // 1 1 0 0 0 100000 100000
-    if(argc == 9)
+    if(argc == 8)
     {
         BatchId = atoi(argv[1]);
         UserId = atoi(argv[2]);
@@ -80,8 +80,8 @@ main(int argc, char** argv)
         StartLBA = atol(argv[5]);
         NBLOCK_SSD_CACHE = NTABLE_SSD_CACHE = atol(argv[6]);
         NBLOCK_SMR_FIFO = atol(argv[7]);
-        EvictStrategy = (atoi(argv[8]) == 0)? Most  : PORE;//PORE;
-        //EvictStrategy = PORE_PLUS;
+  //      EvictStrategy = (atoi(argv[8]) == 0)? Most  : PORE;//PORE;
+        EvictStrategy = Most;
     }
     else
     {
@@ -131,8 +131,11 @@ int initRuntimeInfo()
 {
     char str_STT[50];
     sprintf(str_STT,"STAT_b%d_u%d_t%d",BatchId,UserId,TraceId);
-    if((STT = (struct RuntimeSTAT*)SHM_alloc(str_STT,sizeof(struct RuntimeSTAT))) == NULL)
-        return errno;
+    if((STT = (struct RuntimeSTAT*)malloc(sizeof(struct RuntimeSTAT))) == NULL)
+    {
+        printf("ERROR while malloc STT.\n");
+        exit(-1);
+    }
 
     STT->batchId = BatchId;
     STT->userId = UserId;

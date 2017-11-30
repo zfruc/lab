@@ -143,6 +143,9 @@ static void reportCurInfo()
     printf(" hit num:%lu\n hitnum_r:%lu\n hitnum_w:%lu\n",
            STT->hitnum_s,STT->hitnum_r,STT->hitnum_w);
 
+    printf(" \n read hit rate:%.3f\n write hit rate:%.3f\n total hit rate:%.3f\n\n",
+           STT->hitnum_r/(float) STT->reqcnt_r,STT->hitnum_w/(float) STT->reqcnt_w,STT->hitnum_s/(float) STT->reqcnt_s); 
+
     printf(" read_ssd_blocks:%lu\n flush_ssd_blocks:%lu\n read_hdd_blocks:%lu\n flush_hdd_blocks:%lu\n flush_clean_blocks:%lu\n",
            STT->load_ssd_blocks, STT->flush_ssd_blocks, STT->load_hdd_blocks, STT->flush_hdd_blocks, STT->flush_clean_blocks);
 

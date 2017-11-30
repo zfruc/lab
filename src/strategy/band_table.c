@@ -15,7 +15,7 @@ void initBandTable(size_t size)
 	if(stat==0)
 	{
 		band_hashtable = (BandHashBucket *)SHM_alloc(SHM_Most_HASHTABLE,sizeof(BandHashBucket)*size);
-        freelist = (BandHashBucket *)SHM_alloc(SHM_Most_FREELIST,sizeof(BandHashBucket)*NTABLE_SSD_CACHE);
+        freelist = (BandHashBucket *)SHM_alloc(SHM_Most_FREELIST,sizeof(BandHashBucket)*NTABLE_SSD_CACHE+1);
 		size_t i;
 		BandHashBucket *band_hash = band_hashtable;
 		for(i = 0;i < size; band_hash++,i++){
@@ -37,7 +37,7 @@ void initBandTable(size_t size)
 	else
     {
         band_hashtable = (BandHashBucket *)SHM_get(SHM_Most_HASHTABLE,sizeof(BandHashBucket)*size);
-        freelist = (BandHashBucket *)SHM_get(SHM_Most_FREELIST,sizeof(BandHashBucket)*NTABLE_SSD_CACHE);
+        freelist = (BandHashBucket *)SHM_get(SHM_Most_FREELIST,sizeof(BandHashBucket)*NTABLE_SSD_CACHE+1);
     }
 
 
@@ -78,9 +78,9 @@ long bandtableInsert(long band_num,unsigned long hash_code,long band_id)
 {
 //	printf("insert table:band_num%ld hash_code:%ld band_id:%ld\n ",band_num,hash_code,band_id);
 	BandHashBucket *nowbucket = GetBandHashBucket(hash_code, band_hashtable);
-	while(nowbucket->next_item != -1){
-		nowbucket = &freelist[nowbucket->next_item];
-	}
+//	while(nowbucket->next_item != -1){
+//		nowbucket = &freelist[nowbucket->next_item];
+//	}
 
     BandHashBucket *newitem = bandtableAlloc();
     if(newitem == NULL)
@@ -92,6 +92,15 @@ long bandtableInsert(long band_num,unsigned long hash_code,long band_id)
     newitem->band_id = band_id;
     newitem->next_item = nowbucket->next_item;
     nowbucket->next_item = newitem->self_id;
+
+//    if(band_num == 0)
+//    {
+//        printf("an insert record, band_num = 0.\n");
+//    }
+//    if(hash_code == 0)
+//    {
+//        printf("now hash_code = 0, nowbucket->next_item = %ld.\n",nowbucket->next_item);
+//    }
 
 	return -1;
 }
@@ -111,6 +120,11 @@ long bandtableDelete(long band_num,unsigned long hash_code)
 		}
 		nowbucket = &freelist[nowbucket->next_item];
 	}
+    while(nowbucket->next_item != -1){
+        printf("nowbucket->next_item = %ld.\n",nowbucket->next_item);
+        nowbucket = &freelist[nowbucket->next_item];
+    }
+    printf("band_num = %ld,hash_code = %ld.\n",band_num,hash_code);
     printf("error in bandtableDelete.\n");
     exit(-1);
 	return -1;

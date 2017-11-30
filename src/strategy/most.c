@@ -80,10 +80,11 @@ long LogOutDesp_most()
             break;
         }
 */
-		bandtableDelete(EvictedBand->band_num, bandtableHashcode(EvictedBand->band_num));
+
 		BandDescForMost	temp;
 //		printf("band_descriptors_for_most[0].first_page = %d.\n",band_descriptors_for_most[0].first_page);
 		*EvictedBand = band_descriptors_for_most[0];
+        bandtableDelete(EvictedBand->band_num, bandtableHashcode(EvictedBand->band_num));
 
 		temp = band_descriptors_for_most[ssd_buf_strategy_ctrl_for_most->nbands - 1];
 		long		parent = 0;
