@@ -81,11 +81,10 @@ long LogOutDesp_most()
         }
 */
 
-		BandDescForMost	temp;
-//		printf("band_descriptors_for_most[0].first_page = %d.\n",band_descriptors_for_most[0].first_page);
 		*EvictedBand = band_descriptors_for_most[0];
-        bandtableDelete(EvictedBand->band_num, bandtableHashcode(EvictedBand->band_num));
+        long del_val = bandtableDelete(EvictedBand->band_num, bandtableHashcode(EvictedBand->band_num));
 
+        BandDescForMost	temp;
 		temp = band_descriptors_for_most[ssd_buf_strategy_ctrl_for_most->nbands - 1];
 		long		parent = 0;
 		long		child = parent * 2 + 1;
@@ -125,8 +124,9 @@ long LogOutDesp_most()
 //	printf("first_page = %d,NBLOCK_SSD_CACHE = %d\n",first_page,NBLOCK_SSD_CACHE);
 	EvictedBand->first_page = ssd_buf_desps_for_most[first_page].next_ssd_buf;
 	ssd_buf_desps_for_most[first_page].next_ssd_buf = -1;
-	_UNLOCK(&ssd_buf_strategy_ctrl_for_most->lock);
+
 //printf("now LogOutDesp_most release lock ssd_buf_strategy_ctrl_for_most->lock.\n");
+    _UNLOCK(&ssd_buf_strategy_ctrl_for_most->lock);
 	return ssd_buf_desps_for_most[first_page].ssd_buf_id;
 }
 
@@ -135,6 +135,7 @@ long LogInMostBuffer(long despId, SSDBufTag tag)
 	long		band_num = GetSMRBandNumFromSSD(tag.offset);
 	unsigned long	band_hash = bandtableHashcode(band_num);
 	long		band_id = bandtableLookup(band_num, band_hash);
+    long flag= 0;
 
 	SSDBufDespForMost *ssd_buf_for_most;
 	BandDescForMost *band_hdr_for_most;
@@ -176,8 +177,9 @@ long LogInMostBuffer(long despId, SSDBufTag tag)
 		new_ssd_buf_for_most = &ssd_buf_desps_for_most[despId];
 		new_ssd_buf_for_most->next_ssd_buf = -1;
 	}
-    _UNLOCK(&ssd_buf_strategy_ctrl_for_most->lock);
+
    // printf("now LogOutDesp_most release lock ssd_buf_strategy_ctrl_for_most->lock.\n");
+    _UNLOCK(&ssd_buf_strategy_ctrl_for_most->lock);
 	return band_id;
 }
 

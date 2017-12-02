@@ -324,11 +324,6 @@ simu_smr_write(char *buffer, size_t size, off_t offset)
         simu_stat->simu_time_write_fifo += TimerInterval_SECOND(&tv_start,&tv_stop);
         
         int uId = tag.offset/4096/20000000;
-    /*    if(uId != 0)
-        {
-            printf("uId = %d,offset = %ld in write.\n",uId,tag.offset);
-            exit(-1);
-        }*/
         simu_stat->simu_n_write_fifo[uId]++;
     }
     simu_stat->ACCESS_FLAG = 1;
@@ -483,11 +478,6 @@ flushFIFO()
     _TimerLap(&tv_stop);
 
     int uId = target->tag.offset/4096/20000000;
-/*    if(uId != 0)
-    {
-        printf("uId = %d,offset = %ld in flush.\n",uId,target->tag.offset);
-        exit(-1); 
-    }*/
     simu_stat->simu_time_write_smr += TimerInterval_SECOND(&tv_start,&tv_stop);
     simu_stat->simu_flush_bands++;
     simu_stat->simu_flush_band_size[uId] += band_size;
@@ -559,7 +549,7 @@ void PrintSimulatorStatistic()
     printf("Read Bands:\t%ld\nFlush Bands:\t%ld\nFlush BandSize:\t%ld\n",simu_stat->simu_read_smr_bands, simu_stat->simu_flush_bands, simu_stat->simu_flush_band_size);
 
     int i = 0;
-    for(i = 0;i < 5;i++)
+    for(i = 0;i < 5;i++)        //up to 5 users
     {
         if(simu_stat->simu_flush_band_size[i] == 0)
             break;
