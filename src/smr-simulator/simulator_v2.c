@@ -251,7 +251,7 @@ simu_smr_read(char *buffer, size_t size, off_t offset)
             ssd_hdr = fifo_desp_array + despId;
 
             _TimerLap(&tv_start);
-    //        returnCode = pread(fd_fifo_part, buffer, BLCKSZ, ssd_hdr->despId * BLCKSZ);
+            returnCode = pread(simu_stat->fd_fifo_part, buffer, BLCKSZ, ssd_hdr->despId * BLCKSZ);
             if (returnCode < 0)
             {
                 printf("[ERROR] smrread():-------read from inner ssd: fd=%d, errorcode=%d, offset=%lu\n", simu_stat->fd_fifo_part, returnCode, ssd_hdr->despId * BLCKSZ);
@@ -266,7 +266,7 @@ simu_smr_read(char *buffer, size_t size, off_t offset)
             simu_stat->simu_n_read_smr++;
             _TimerLap(&tv_start);
 
-      //      returnCode = pread(fd_smr_part, buffer, BLCKSZ, offset + i * BLCKSZ);
+            returnCode = pread(simu_stat->fd_smr_part, buffer, BLCKSZ, offset + i * BLCKSZ);
             if (returnCode < 0)
             {
                 printf("[ERROR] smrread():-------read from smr disk: fd=%d, errorcode=%d, offset=%lu\n", simu_stat->fd_smr_part, returnCode, offset + i * BLCKSZ);
@@ -314,7 +314,7 @@ simu_smr_write(char *buffer, size_t size, off_t offset)
 	        removeFromArray(oldDesp); ///invalid the old desp;
 	    }
         _TimerLap(&tv_start);
-    //    returnCode = pwrite(fd_fifo_part, buffer, BLCKSZ, ssd_hdr->despId * BLCKSZ);
+        returnCode = pwrite(simu_stat->fd_fifo_part, buffer, BLCKSZ, ssd_hdr->despId * BLCKSZ);
         if (returnCode < 0)
         {
             printf("[ERROR] smrwrite():-------write to smr disk: fd=%d, errorcode=%d, offset=%lu\n", simu_stat->fd_fifo_part, returnCode, offset + i * BLCKSZ);
@@ -384,10 +384,10 @@ flushFIFO()
 
     /* read whole band from smr to buffer*/
     _TimerLap(&tv_start);
-//    returnCode = pread(fd_smr_part, BandBuffer, band_size,band_offset);
+    returnCode = pread(simu_stat->fd_smr_part, BandBuffer, band_size,band_offset);
     if (returnCode < 0)
     {
-        printf("[ERROR] flushSSD():---------read from smr: fd=%d, errorcode=%d, offset=%lu\n", simu_stat->fd_smr_part, returnCode, band_offset);
+        printf("[ERROR] flushSSD():---------read from smr: fd=%d, errorcode=%d, offset=%lu, errno=%d\n", simu_stat->fd_smr_part, returnCode, band_offset,errno);
         exit(-1);
     }
     _TimerLap(&tv_stop);
@@ -424,10 +424,10 @@ flushFIFO()
             aio_read_cnt++;
 #else
             _TimerLap(&tv_start);
-     //       returnCode = pread(fd_fifo_part, BandBuffer + offset_inband * BLCKSZ, BLCKSZ, curPos * BLCKSZ);
+            returnCode = pread(simu_stat->fd_fifo_part, BandBuffer + offset_inband * BLCKSZ, BLCKSZ, curPos * BLCKSZ);
             if (returnCode < 0)
             {
-                printf("[ERROR] flushSSD():-------read from inner ssd: fd=%d, errorcode=%d, offset=%lu\n", simu_stat->fd_fifo_part, returnCode, curPos * BLCKSZ);
+                printf("[ERROR] flushSSD():-------read from inner ssd: fd=%d, errorcode=%d, offset=%lu, errorno=%d\n", simu_stat->fd_fifo_part, returnCode, curPos * BLCKSZ,errno);
                 exit(-1);
             }
             _TimerLap(&tv_stop);
@@ -469,10 +469,10 @@ flushFIFO()
     /* flush whole band to smr */
     _TimerLap(&tv_start);
 
-//    returnCode = pwrite(fd_smr_part, BandBuffer, band_size, band_offset);
+    returnCode = pwrite(simu_stat->fd_smr_part, BandBuffer, band_size, band_offset);
     if (returnCode < 0)
     {
-        printf("[ERROR] flushSSD():-------write to smr: fd=%d, errorcode=%d, offset=%lu\n", simu_stat->fd_smr_part, returnCode, band_offset);
+        printf("[ERROR] flushSSD():-------write to smr: fd=%d, errorcode=%d, offset=%lu, errno=%d\n", simu_stat->fd_smr_part, returnCode, band_offset,errno);
         exit(-1);
     }
     _TimerLap(&tv_stop);
@@ -553,7 +553,7 @@ void PrintSimulatorStatistic()
     {
         if(simu_stat->simu_flush_band_size[i] == 0)
             break;
-        printf("User %d  WrtAmp:\t%lf\n",i,(double)simu_stat->simu_flush_band_size[i] / (simu_stat->simu_n_write_fifo[i] * BLCKSZ));
+        printf("User %d  WrtAmp:\t%.2lf\n",i,(double)simu_stat->simu_flush_band_size[i] / (simu_stat->simu_n_write_fifo[i] * BLCKSZ));
     }
 //    printf("Total WrtAmp:\t%lf\n",(double)simu_stat->simu_flush_band_size / (simu_stat->simu_n_write_fifo * BLCKSZ));
 }

@@ -26,9 +26,9 @@ const blksize_t BLCKSZ = 4096;
 const blkcnt_t  NZONES = 194180;    // NZONES * ZONESZ =
 const blksize_t ZONESZ = 18874368;//18MB    // Unit: Byte.
 
-char simu_smr_fifo_device[] = "/tmp/sdb1";
-char simu_smr_smr_device[] = "/tmp/sdb2";
-char smr_device[] = "/tmp/sdc";
+char simu_smr_fifo_device[] = "/sdb1";
+char simu_smr_smr_device[] = "/sdb2";
+char smr_device[] = "/sdc";
 char ssd_device[] = "/mnt/ssd/ssd";
 char ram_device[1024];
 

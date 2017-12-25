@@ -4,7 +4,8 @@
 #include "shmlib.h"
 #include "most.h"
 
- long GetSMRBandNumFromSSD(unsigned long offset);
+#define MOST_DIRTY 1
+long GetSMRBandNumFromSSD(unsigned long offset);
 
 BandDescForMost	*EvictedBand;
 
@@ -130,7 +131,7 @@ long LogOutDesp_most()
 	return ssd_buf_desps_for_most[first_page].ssd_buf_id;
 }
 
-long LogInMostBuffer(long despId, SSDBufTag tag)
+long LogInMostBuffer(long despId, SSDBufTag tag,unsigned despflag)
 {
 	long		band_num = GetSMRBandNumFromSSD(tag.offset);
 	unsigned long	band_hash = bandtableHashcode(band_num);
@@ -149,7 +150,13 @@ long LogInMostBuffer(long despId, SSDBufTag tag)
 		new_ssd_buf_for_most->next_ssd_buf = band_descriptors_for_most[band_id].first_page;
 		band_descriptors_for_most[band_id].first_page = despId;
 
-		band_descriptors_for_most[band_id].current_pages++;
+        if(MOST_DIRTY)
+        {
+            if((despflag & SSD_BUF_DIRTY) != 0)
+                band_descriptors_for_most[band_id].current_pages++;
+        }
+        else
+            band_descriptors_for_most[band_id].current_pages++;
 		BandDescForMost	temp;
 		long		parent = (band_id - 1) / 2;
 		long		child = band_id;

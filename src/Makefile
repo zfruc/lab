@@ -37,7 +37,7 @@ cahce.o: cache.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $?
 
 trace2call.o: trace2call.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $?
+	$(CC) $(CPPFLAGS) $(CFLAGS) -ldl -c $?
 
 main.o: main.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $?

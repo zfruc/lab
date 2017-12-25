@@ -15,12 +15,14 @@
 
 extern struct RuntimeSTAT* STT;
 #define REPORT_INTERVAL 10000
+#define MONITOR_INTERVAL 3          //report the count of handled trace lines & cache hit rate for this period of time every 3 seconds
 
 static void reportCurInfo();
 static void report_ontime();
 static void resetStatics();
 
 static timeval  tv_trace_start, tv_trace_end;
+static timeval  tv_monitor_last,tv_monitor_now;
 static double time_trace;
 
 /** single request statistic information **/
@@ -38,6 +40,29 @@ trace_to_iocall(char *trace_file_path, int isWriteOnly,off_t startLBA)
     char       *ssd_buffer;
     int	        returnCode;
     int         isFullSSDcache = 0;
+
+#ifdef REPORT_MONITOR
+    char buf[30];
+    sprintf(buf,"%ld",STT->userId);
+    FILE *monitor_file = fopen(strcat(buf,"_monitor.csv"),"w+");
+
+    blkcnt_t last_hitnum_s=0,last_reqcnt_s=0;
+
+    if(monitor_file  == NULL)
+    {
+        error("Failed to open monitor file!\n");
+        exit(1);
+    }
+
+    perror("monitor.csv");
+
+    if(monitor_file == 0)
+    {
+        printf("errno = %d.\n",errno);
+        exit(1);
+    }
+#endif
+
 #ifdef CG_THROTTLE
     static char* cgbuf;
     int returncode = posix_memalign(&cgbuf, 512, 4096);
@@ -64,6 +89,9 @@ trace_to_iocall(char *trace_file_path, int isWriteOnly,off_t startLBA)
     }
 
     _TimerLap(&tv_trace_start);
+#ifdef REPORT_MONITOR
+    _TimerLap(&tv_monitor_last);
+#endif
     static int req_cnt = 0;
 
     while (!feof(trace) && req_cnt++ < 84340000)
@@ -91,6 +119,9 @@ trace_to_iocall(char *trace_file_path, int isWriteOnly,off_t startLBA)
             reportCurInfo();
             resetStatics();        // Because we do not care about the statistic while the process of filling SSD cache.
             isFullSSDcache = 1;
+#ifdef REPORT_MONITOR
+            last_hitnum_s = last_reqcnt_s = 0;
+#endif
         }
 
 #ifdef LOG_SINGLE_REQ
@@ -126,7 +157,29 @@ trace_to_iocall(char *trace_file_path, int isWriteOnly,off_t startLBA)
 
 
         //ResizeCacheUsage();
+#ifdef REPORT_MONITOR
+        _TimerLap(&tv_monitor_now);
+        if(Mirco2Sec(TimerInterval_MICRO(&tv_monitor_last,&tv_monitor_now)) > MONITOR_INTERVAL)
+        {
+            fprintf(monitor_file,"%ld,%.2f\n",STT->reqcnt_s,(STT->hitnum_s-last_hitnum_s)/(float)(STT->reqcnt_s - last_reqcnt_s));
+
+            last_hitnum_s = STT->hitnum_s;
+            last_reqcnt_s = STT->reqcnt_s;
+            tv_monitor_last = tv_monitor_now;
+            fflush(monitor_file);
+        }
+#endif
     }
+
+#ifdef REPORT_MONITOR
+    _TimerLap(&tv_monitor_now);
+    fprintf(monitor_file,"%ld,%.2f\n",STT->reqcnt_s,(STT->hitnum_s-last_hitnum_s)/(float)(STT->reqcnt_s - last_reqcnt_s));
+    last_hitnum_s = STT->hitnum_s;
+    last_reqcnt_s = STT->reqcnt_s;
+    tv_monitor_last = tv_monitor_now;
+    fflush(monitor_file);
+    fclose(monitor_file);
+#endif
 
     _TimerLap(&tv_trace_end);
     time_trace = Mirco2Sec(TimerInterval_MICRO(&tv_trace_start,&tv_trace_end));
@@ -137,6 +190,8 @@ trace_to_iocall(char *trace_file_path, int isWriteOnly,off_t startLBA)
 
 static void reportCurInfo()
 {
+    struct timeval endtime;
+    gettimeofday( &endtime, NULL );
     printf(" totalreqNum:%lu\n read_req_count: %lu\n write_req_count: %lu\n",
            STT->reqcnt_s,STT->reqcnt_r,STT->reqcnt_w);
 
@@ -151,6 +206,8 @@ static void reportCurInfo()
 
     printf(" hash_miss:%lu\n hashmiss_read:%lu\n hashmiss_write:%lu\n",
            STT->hashmiss_sum, STT->hashmiss_read, STT->hashmiss_write);
+
+    printf(" end of time is (s) : %.6f\n",(double)endtime.tv_usec/1000000+endtime.tv_sec);
 
     printf(" total run time (s) : %lf\n time_read_ssd : %lf\n time_write_ssd : %lf\n time_read_smr : %lf\n time_write_smr : %lf\n",
            time_trace, STT->time_read_ssd, STT->time_write_ssd, STT->time_read_hdd, STT->time_write_hdd);

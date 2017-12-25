@@ -21,6 +21,8 @@
 #include "smr-simulator/simulator_v2.h"
 #include "trace2call.h"
 
+long CacheLimit = -1;
+
 extern void FunctionalTest();
 
 unsigned int INIT_PROCESS = 0;
@@ -71,7 +73,7 @@ main(int argc, char** argv)
 
 // 1 1 1 0 0 100000 100000
 // 1 1 0 0 0 100000 100000
-    if(argc == 8)
+    if(argc == 9)
     {
         BatchId = atoi(argv[1]);
         UserId = atoi(argv[2]);
@@ -81,7 +83,8 @@ main(int argc, char** argv)
         NBLOCK_SSD_CACHE = NTABLE_SSD_CACHE = atol(argv[6]);
         NBLOCK_SMR_FIFO = atol(argv[7]);
   //      EvictStrategy = (atoi(argv[8]) == 0)? Most  : PORE;//PORE;
-        EvictStrategy = Most;
+        EvictStrategy = LRU_private;
+        CacheLimit = atol(argv[8]);
     }
     else
     {
@@ -143,7 +146,11 @@ int initRuntimeInfo()
     STT->startLBA = StartLBA;
     STT->isWriteOnly = WriteOnly;
     STT->cacheUsage = 0;
-    STT->cacheLimit = 0x7fffffffffffffff;
+   // STT->cacheLimit = 0x7fffffffffffffff;
+    if(EvictStrategy == LRU_private)
+        STT->cacheLimit = (CacheLimit < 0)? 0x7fffffffffffffff  : CacheLimit;
+    else
+        STT->cacheLimit = 0x7fffffffffffffff;
     return 0;
 }
 

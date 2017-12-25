@@ -38,8 +38,7 @@ initSSDBufferForLRU()
             ssd_buf_hdr_for_lru->serial_id = i;
             ssd_buf_hdr_for_lru->next_lru = -1;
             ssd_buf_hdr_for_lru->last_lru = -1;
-            SHM_mutex_init(&
-                           ssd_buf_hdr_for_lru->lock);
+            SHM_mutex_init(&ssd_buf_hdr_for_lru->lock);
         }
     }
     else
@@ -53,7 +52,7 @@ initSSDBufferForLRU()
 }
 
 long
-Unload_LRUBuf()
+LogOutDesp_lru()
 {
     _LOCK(&strategy_ctrl->lock);
 
@@ -65,7 +64,7 @@ Unload_LRUBuf()
 }
 
 int
-hitInLRUBuffer(long serial_id)
+HitLruBuffer(long serial_id)
 {
     _LOCK(&strategy_ctrl->lock);
 
@@ -81,8 +80,7 @@ hitInLRUBuffer(long serial_id)
     return 0;
 }
 
-void*
-insertLRUBuffer(long serial_id)
+void LogInLruBuffer(long serial_id)
 {
     _LOCK(&strategy_ctrl->lock);
 
@@ -117,7 +115,7 @@ deleteFromLRU(StrategyDesp_LRU_global * ssd_buf_hdr_for_lru)
     {
         strategy_desp[ssd_buf_hdr_for_lru->last_lru].next_lru = ssd_buf_hdr_for_lru->next_lru;
     }
-    else
+    else                    //the newest one was chosen
     {
         strategy_ctrl->first_lru = ssd_buf_hdr_for_lru->next_lru;
     }
@@ -125,12 +123,13 @@ deleteFromLRU(StrategyDesp_LRU_global * ssd_buf_hdr_for_lru)
     {
         strategy_desp[ssd_buf_hdr_for_lru->next_lru].last_lru = ssd_buf_hdr_for_lru->last_lru;
     }
-    else
+    else                    //the oldest one was chosen
     {
         strategy_ctrl->last_lru = ssd_buf_hdr_for_lru->last_lru;
     }
 
     ssd_buf_hdr_for_lru->last_lru = ssd_buf_hdr_for_lru->next_lru = -1;
+
     return NULL;
 }
 
