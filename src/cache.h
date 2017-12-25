@@ -32,6 +32,7 @@ typedef struct
 } SSDBufDespCtrl;
 
 extern int IsHit;
+extern int *FinishProcess;
 extern microsecond_t msec_r_hdd,msec_w_hdd,msec_r_ssd,msec_w_ssd,msec_bw_hdd;
 
 extern void initSSD();

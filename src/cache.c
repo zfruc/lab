@@ -41,6 +41,7 @@ static timeval tv_bastart, tv_bastop;
 long insertCall,deleteCall;
 static unsigned long cleanbkCnt;
 int IsHit;
+int *FinishProcess;
 microsecond_t msec_r_hdd,msec_w_hdd,msec_r_ssd,msec_w_ssd,msec_bw_hdd=0;
 
 /* Device I/O operation with Timer */
@@ -83,8 +84,11 @@ init_SSDDescriptorBuffer()
     int stat = SHM_lock_n_check("LOCK_SSDBUF_DESP");
     if(stat == 0)
     {
+        FinishProcess = (int *)SHM_alloc(SHM_FINISH_PROCESS, sizeof(int));
         ssd_buf_desp_ctrl = (SSDBufDespCtrl*)SHM_alloc(SHM_SSDBUF_DESP_CTRL,sizeof(SSDBufDespCtrl));
         ssd_buf_desps = (SSDBufDesp *)SHM_alloc(SHM_SSDBUF_DESPS,sizeof(SSDBufDesp) * NBLOCK_SSD_CACHE);
+
+        *FinishProcess = 0;
 
         ssd_buf_desp_ctrl->n_usedssd = 0;
         ssd_buf_desp_ctrl->first_freessd = 0;
@@ -104,8 +108,10 @@ init_SSDDescriptorBuffer()
     }
     else
     {
+        FinishProcess = (int *)SHM_get(SHM_FINISH_PROCESS, sizeof(int));
         ssd_buf_desp_ctrl = (SSDBufDespCtrl *)SHM_get(SHM_SSDBUF_DESP_CTRL,sizeof(SSDBufDespCtrl));
         ssd_buf_desps = (SSDBufDesp *)SHM_get(SHM_SSDBUF_DESPS,sizeof(SSDBufDesp) * NBLOCK_SSD_CACHE);
+
     }
     SHM_unlock("LOCK_SSDBUF_DESP");
     return stat;

@@ -69,5 +69,7 @@ const char* SHM_SSD_FREE_LIST = "SHM_SSD_FREE_LIST";
 const char* SHM_Most_HASHTABLE = "SHM_Most_HASHTABLE";
 const char* SHM_Most_FREELIST = "SHM_Most_FREELIST";
 
+const char* SHM_FINISH_PROCESS = "SHM_FINISH_PROCESS";
+
 const char* PATH_LOG = "/home/outputs/logs";
 

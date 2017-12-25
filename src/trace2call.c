@@ -106,6 +106,13 @@ trace_to_iocall(char *trace_file_path, int isWriteOnly,off_t startLBA)
         }
 #endif // CG_THROTTLE
 
+#ifdef SHORTEST_USER_DECIDE
+        if(*FinishProcess==1)
+        {
+            break;
+        }
+#endif
+
         returnCode = fscanf(trace, "%c %d %lu\n", &action, &i, &offset);
         if (returnCode < 0)
         {
@@ -170,6 +177,10 @@ trace_to_iocall(char *trace_file_path, int isWriteOnly,off_t startLBA)
         }
 #endif
     }
+
+#ifdef SHORTEST_USER_DECIDE
+    *FinishProcess==1;
+#endif
 
 #ifdef REPORT_MONITOR
     _TimerLap(&tv_monitor_now);
