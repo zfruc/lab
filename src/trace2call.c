@@ -179,7 +179,7 @@ trace_to_iocall(char *trace_file_path, int isWriteOnly,off_t startLBA)
     }
 
 #ifdef SHORTEST_USER_DECIDE
-    *FinishProcess==1;
+    *FinishProcess=1;
 #endif
 
 #ifdef REPORT_MONITOR
