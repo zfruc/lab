@@ -101,20 +101,24 @@ extern const blksize_t ZONESZ;
 extern char simu_smr_fifo_device[];
 extern char simu_smr_smr_device[];
 extern char smr_device[];
-extern char ssd_device[];
+extern char ssd_device_read[];
+extern char ssd_device_write[];
 extern char ram_device[1024];
 
 extern int BandOrBlock;
 
 /*Block = 0, Band=1*/
 extern int hdd_fd;
-extern int ssd_fd;
+extern int ssd_fd_read;
+extern int ssd_fd_write;
 extern int ram_fd;
 extern struct RuntimeSTAT* STT;
 
 /** Shared memory variable names **/
-extern const char* SHM_SSDBUF_STRATEGY_CTRL;
-extern const char* SHM_SSDBUF_STRATEGY_DESP;
+extern const char* SHM_SSDBUF_STRATEGY_CTRL_READ;
+extern const char* SHM_SSDBUF_STRATEGY_CTRL_WRITE;
+extern const char* SHM_SSDBUF_STRATEGY_DESP_READ;
+extern const char* SHM_SSDBUF_STRATEGY_DESP_WRITE;
 
 extern const char* SHM_BAND_STRATEGY_DESP;
 extern const char* SHM_STRATEGY_EVICTED_BAND;
@@ -124,8 +128,10 @@ extern const char* SHM_FIFO_DESP_ARRAY;
 extern const char* SHM_SIMU_STAT;
 extern const char* SHM_SSD_BUF_HASH_BUCKET;
 
-extern const char* SHM_SSDBUF_DESP_CTRL;
-extern const char* SHM_SSDBUF_DESPS;
+extern const char* SHM_SSDBUF_DESP_CTRL_READ;
+extern const char* SHM_SSDBUF_DESP_CTRL_WRITE;
+extern const char* SHM_SSDBUF_DESPS_READ;
+extern const char* SHM_SSDBUF_DESPS_WRITE;
 
 extern const char* SHM_SSDBUF_HASHTABLE_CTRL;
 extern const char* SHM_SSDBUF_HASHTABLE;
@@ -135,8 +141,11 @@ extern const char* SHM_PROCESS_REQ_LOCK;
 extern const char* SHM_FIFO_HASH_BUCKET;
 extern const char* SHM_FIFO_HASH_FREELIST;
 
-extern const char* SHM_SSD_HASH_TAB;
-extern const char* SHM_SSD_FREE_LIST;
+extern const char* SHM_SSD_HASH_TAB_READ;
+extern const char* SHM_SSD_HASH_TAB_WRITE;
+extern const char* SHM_SSD_FREE_LIST_READ;
+extern const char* SHM_SSD_FREE_LIST_WRITE;
+
 
 extern const char* SHM_Most_HASHTABLE;
 extern const char* SHM_Most_FREELIST;

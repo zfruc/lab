@@ -22,6 +22,7 @@ typedef struct
     long		next_freessd;           // to link the desp serial number of free SSD buffer
     SSDBufTag 	ssd_buf_tag;
     pthread_mutex_t lock;               // For the fine grain size
+    int ssd_fd;
 } SSDBufDesp;
 
 typedef struct

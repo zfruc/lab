@@ -20,7 +20,7 @@ typedef struct
 } StrategyCtrl_LRU_global;
 
 extern int initSSDBufferForLRU();
-extern long LogOutDesp_lru();
-extern int HitLruBuffer(long serial_id);
-extern void LogInLruBuffer(long serial_id);
+extern long LogOutDesp_lru(unsigned int rw);
+extern int HitLruBuffer(long serial_id,unsigned int rw);
+extern void LogInLruBuffer(long serial_id,unsigned int rw);
 #endif // _LRU_GLOBAL_H_

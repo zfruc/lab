@@ -1,6 +1,7 @@
 
 #undef NO_REAL_DISK_IO
 
+#undef NO_EXTRA_SSD_IO
 #undef NO_CACHE
 
 #undef REPORT_MONITOR  //decide whether to report count of handled trace & hit rate or not

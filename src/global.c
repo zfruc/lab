@@ -29,26 +29,32 @@ const blksize_t ZONESZ = 18874368;//18MB    // Unit: Byte.
 char simu_smr_fifo_device[] = "/sdb1";
 char simu_smr_smr_device[] = "/sdb2";
 char smr_device[] = "/sdc";
-char ssd_device[] = "/mnt/ssd/ssd";
+char ssd_device_read[30] = "/dev/sdb";
+char ssd_device_write[30] = "/dev/sdc";
 char ram_device[1024];
 
 int BandOrBlock;
 
 /*Block = 0, Band=1*/
 int hdd_fd;
-int ssd_fd;
+int ssd_fd_read;
+int ssd_fd_write;
 int ram_fd;
 struct RuntimeSTAT* STT;
 
 /** Shared memory variable names **/
-const char* SHM_SSDBUF_STRATEGY_CTRL = "SHM_SSDBUF_STRATEGY_CTRL";
-const char* SHM_SSDBUF_STRATEGY_DESP = "SHM_SSDBUF_STRATEGY_DESP";
+const char* SHM_SSDBUF_STRATEGY_CTRL_READ = "SHM_SSDBUF_STRATEGY_CTRL_READ";
+const char* SHM_SSDBUF_STRATEGY_CTRL_WRITE = "SHM_SSDBUF_STRATEGY_CTRL_WRITE";
+const char* SHM_SSDBUF_STRATEGY_DESP_READ = "SHM_SSDBUF_STRATEGY_DESP_READ";
+const char* SHM_SSDBUF_STRATEGY_DESP_WRITE = "SHM_SSDBUF_STRATEGY_DESP_WRITE";
 const char* SHM_BAND_STRATEGY_DESP = "SHM_BAND_STRATEGY_DESP";
 const char* SHM_STRATEGY_EVICTED_BAND = "SHM_STRATEGY_EVICTED_BAND";
 const char* SHM_BAND_HASH_BUCKET = "SHM_BAND_HASH_BUCKET";
 
-const char* SHM_SSDBUF_DESP_CTRL = "SHM_SSDBUF_DESP_CTRL";
-const char* SHM_SSDBUF_DESPS = "SHM_SSDBUF_DESPS";
+const char* SHM_SSDBUF_DESP_CTRL_READ = "SHM_SSDBUF_DESP_CTRL_READ";
+const char* SHM_SSDBUF_DESP_CTRL_WRITE = "SHM_SSDBUF_DESP_CTRL_WRITE";
+const char* SHM_SSDBUF_DESPS_READ = "SHM_SSDBUF_DESPS_READ";
+const char* SHM_SSDBUF_DESPS_WRITE = "SHM_SSDBUF_DESPS_WRITE";
 
 const char* SHM_SSDBUF_HASHTABLE_CTRL = "SHM_SSDBUF_HASHTABLE_CTRL";
 const char* SHM_SSDBUF_HASHTABLE = "SHM_SSDBUF_HASHTABLE";
@@ -63,8 +69,10 @@ const char* SHM_SSD_HASH_BUCKET = "SHM_SSD_HASH_BUCKET";
 const char* SHM_FIFO_HASH_BUCKET = "SHM_FIFO_HASH_BUCKET";
 const char* SHM_FIFO_HASH_FREELIST = "SHM_FIFO_HASH_FREELIST";
 
-const char* SHM_SSD_HASH_TAB = "SHM_SSD_HASH_TAB";
-const char* SHM_SSD_FREE_LIST = "SHM_SSD_FREE_LIST";
+const char* SHM_SSD_HASH_TAB_READ = "SHM_SSD_HASH_TAB_READ";
+const char* SHM_SSD_HASH_TAB_WRITE = "SHM_SSD_HASH_TAB_WRITE";
+const char* SHM_SSD_FREE_LIST_READ = "SHM_SSD_FREE_LIST_READ";
+const char* SHM_SSD_FREE_LIST_WRITE = "SHM_SSD_FREE_LIST_WRITE";
 
 const char* SHM_Most_HASHTABLE = "SHM_Most_HASHTABLE";
 const char* SHM_Most_FREELIST = "SHM_Most_FREELIST";

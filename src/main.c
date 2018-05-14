@@ -73,7 +73,7 @@ main(int argc, char** argv)
 
 // 1 1 1 0 0 100000 100000
 // 1 1 0 0 0 100000 100000
-    if(argc == 9)
+    if(argc == 10)
     {
         BatchId = atoi(argv[1]);
         UserId = atoi(argv[2]);
@@ -82,9 +82,9 @@ main(int argc, char** argv)
         StartLBA = atol(argv[5]);
         NBLOCK_SSD_CACHE = NTABLE_SSD_CACHE = atol(argv[6]);
         NBLOCK_SMR_FIFO = atol(argv[7]);
-  //      EvictStrategy = (atoi(argv[8]) == 0)? Most  : PORE;//PORE;
-        EvictStrategy = LRU_private;
         CacheLimit = atol(argv[8]);
+        EvictStrategy = (atoi(argv[9]) == 0)? LRU_global  : LRU_private;
+     //   EvictStrategy = LRU_global;
     }
     else
     {
@@ -109,12 +109,13 @@ main(int argc, char** argv)
 
 
 
-    ssd_fd = open(ssd_device, O_RDWR | O_DIRECT);
+    ssd_fd_read = open(ssd_device_read, O_RDWR | O_DIRECT);
+    ssd_fd_write = open(ssd_device_write, O_RDWR | O_DIRECT);
 #ifdef SIMULATION
     InitSimulator();
 #else
     hdd_fd = open(smr_device, O_RDWR | O_DIRECT);
-    printf("Device ID: hdd=%d, ssd=%d\n",hdd_fd,ssd_fd);
+    printf("Device ID: hdd=%d, ssd_read=%d, ssd_write=%d\n",hdd_fd,ssd_fd_read,ssd_fd_write);
 
 #endif
 
@@ -124,7 +125,8 @@ main(int argc, char** argv)
     PrintSimulatorStatistic();
 #endif
     close(hdd_fd);
-    close(ssd_fd);
+    close(ssd_fd_read);
+    close(ssd_fd_write);
     CloseLogFile();
 
     return 0;
